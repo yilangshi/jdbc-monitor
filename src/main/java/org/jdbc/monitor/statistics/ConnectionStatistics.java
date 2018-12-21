@@ -1,6 +1,8 @@
 package org.jdbc.monitor.statistics;
 
 import lombok.extern.slf4j.Slf4j;
+import org.jdbc.monitor.MonitorDriver;
+import org.jdbc.monitor.common.Constant;
 import org.jdbc.monitor.common.STAT_CONN;
 import org.jdbc.monitor.event.ConnectionEvent;
 import org.jdbc.monitor.event.EVENT_STATE;
@@ -11,13 +13,12 @@ import org.jdbc.monitor.exceptoin.IllegalEventException;
 import org.jdbc.monitor.listener.AbstractConnectionMonitorEventListener;
 import org.jdbc.monitor.listener.AbstractMonitorEventListener;
 import org.jdbc.monitor.util.ClassUtils;
+import org.jdbc.monitor.util.DateUtils;
+import org.jdbc.monitor.util.LRUList;
 import org.jdbc.monitor.warn.Warn;
 
 import java.sql.Driver;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -37,11 +38,14 @@ public class ConnectionStatistics extends AbstractConnectionMonitorEventListener
 
     private final AtomicInteger connCloseFailureCount = new AtomicInteger();
 
-    private final ConcurrentHashMap<String,String> connOpenFailInfo = new ConcurrentHashMap<>();
+    private final LRUList<String> connOpenFailInfo = new LRUList<>(Constant.LIST_MAX_SIZE);
 
-    private final ConcurrentHashMap<String,String> connCloseFailInfo = new ConcurrentHashMap<>();
+    private final LRUList<String> connCloseFailInfo = new LRUList<>(Constant.LIST_MAX_SIZE);
 
-    private List<Warn> warnList = new ArrayList<>();
+    /** 生存时间统计,单位毫秒,当超过最大size时机损connKeepaliveTimeRange */
+    private final List<Long> connKeepaliveTimes = Collections.synchronizedList(new ArrayList<Long>());
+    /** 生存时间分布，按5段时间范围统计 */
+    private final Map<String,Integer> connKeepaliveTimeRange = new ConcurrentHashMap<>();
 
     @Override
     public void onMonitorEvent(ConnectionEvent event) {
@@ -60,23 +64,41 @@ public class ConnectionStatistics extends AbstractConnectionMonitorEventListener
             connOpenSuccessCount.incrementAndGet();
         }else{
             connOpenFailureCount.incrementAndGet();
-            Driver driver = (Driver)event.getSource();
-            if(connOpenFailInfo.size() < 16) {
-                connOpenFailInfo.put(driver.toString(), event.getErrorMsg());
-            }
+            MonitorDriver driver = (MonitorDriver)event.getSource();
+            connOpenFailInfo.add(getErrorInfo(driver,event));
         }
     }
 
     private void doConnectCloseHandler(ConnectionEvent event){
         if(event.getState() == EVENT_STATE.SUCCESS){
             connCloseSuccessCount.incrementAndGet();
+            //计算链接生存时间
+            connKeepaliveTimes.add(event.getFireTime()-event.getGenerateTime());
+            //当超过最大size时机损connKeepaliveTimeRange
+            if(connKeepaliveTimes.size() >= Constant.LIST_MAX_SIZE){
+
+            }
         }else{
             connCloseFailureCount.incrementAndGet();
-            Driver driver = (Driver)event.getSource();
-            if(connCloseFailInfo.size() < 16) {
-                connCloseFailInfo.put(driver.toString(), event.getErrorMsg());
-            }
+            MonitorDriver driver = (MonitorDriver)event.getSource();
+            connCloseFailInfo.add(getErrorInfo(driver,event));
         }
+    }
+
+    /**
+     * 获取失败信息，格式：【异常发生时间】【耗时】【dburl】【dbuser】【error msg】
+     * @param driver
+     * @param event
+     * @return
+     */
+    private String getErrorInfo(MonitorDriver driver,ConnectionEvent event){
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("[").append(DateUtils.format(event.getFireTime())).append("]");
+        stringBuilder.append("[").append(event.getFireTime() - event.getGenerateTime()).append("ms]");
+        stringBuilder.append("[").append(driver.getDbUrl()).append("]");
+        stringBuilder.append("[").append(driver.getDbUser()).append("]");
+        stringBuilder.append("[").append(event.getErrorMsg()).append("]");
+        return stringBuilder.toString();
     }
 
     @Override
@@ -98,10 +120,8 @@ public class ConnectionStatistics extends AbstractConnectionMonitorEventListener
         stringBuilder.append(STAT_CONN.CONN_OPEN_FAILURE_COUNT.getName()).append(":").append(connOpenFailureCount.get()).append("\r\n");
         stringBuilder.append(STAT_CONN.CONN_CLOSE_SUCCESS_COUNT.getName()).append(":").append(connCloseSuccessCount.get()).append("\r\n");
         stringBuilder.append(STAT_CONN.CONN_CLOSE_FAILURE_COUNT.getName()).append(":").append(connCloseFailureCount.get()).append("\r\n");
-        stringBuilder.append(STAT_CONN.CONN_OPEN_FAILURE_INFO.getName()).append(":").append(connOpenFailInfo.entrySet().stream()
-                .map(item->item.getKey()+":"+item.getValue()).collect(Collectors.toList())).append("\r\n");
-        stringBuilder.append(STAT_CONN.CONN_CLOSE_FAILURE_INFO.getName()).append(":").append(connCloseFailInfo.entrySet().stream()
-                .map(item->item.getKey()+":"+item.getValue()).collect(Collectors.toList()));
+        stringBuilder.append(STAT_CONN.CONN_OPEN_FAILURE_INFO.getName()).append(":").append(connOpenFailInfo.stream().collect(Collectors.toList())).append("\r\n");
+        stringBuilder.append(STAT_CONN.CONN_CLOSE_FAILURE_INFO.getName()).append(":").append(connCloseFailInfo.stream().collect(Collectors.toList()));
         return stringBuilder.toString();
     }
 

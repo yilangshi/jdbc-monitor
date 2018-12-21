@@ -104,4 +104,9 @@ public class AppTest
         System.out.println(statisticsInfo);
         System.out.println("================");
     }
+
+    @Test
+    public void testWaitTimeOut(){
+
+    }
 }

@@ -9,6 +9,7 @@ import org.jdbc.monitor.event.type.CONN_EVENT;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.sql.Connection;
+import java.util.UUID;
 
 /**
  * @author: shi rui
@@ -16,10 +17,12 @@ import java.sql.Connection;
  */
 public class ConnectionProxy extends EventSupport implements InvocationHandler {
 
-    private Connection conn;
+    private final Connection conn;
+    private final long startTime;
 
     public ConnectionProxy(Connection conn){
         this.conn = conn;
+        this.startTime = System.currentTimeMillis();
     }
 
     @Override
@@ -44,5 +47,9 @@ public class ConnectionProxy extends EventSupport implements InvocationHandler {
         }finally {
             publishEvent(ConnectionEvent.build(conn, CONN_EVENT.CONN_CLOSE, start, System.currentTimeMillis(), eventState, errorMsg));
         }
+    }
+
+    public long getStartTime() {
+        return startTime;
     }
 }

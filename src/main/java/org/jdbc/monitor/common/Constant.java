@@ -19,7 +19,8 @@ public final class Constant {
     /** 被代理驱动 */
     public static final String PROXY_TARGET_DRIVER = "proxy.target.driver";
 
-
+    /** 信息中存放最多的数据条数,多于此条数，丢弃时间最久的 */
+    public static final int LIST_MAX_SIZE = 1024;
 
 
 
