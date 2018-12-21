@@ -7,6 +7,7 @@ import org.jdbc.monitor.event.EventSupport;
 import org.jdbc.monitor.event.type.CONN_EVENT;
 import org.jdbc.monitor.proxy.ConnectionFactory;
 import org.jdbc.monitor.util.DriverUtils;
+import org.jdbc.monitor.util.PropertyUtils;
 
 import java.sql.*;
 import java.util.Properties;
@@ -18,23 +19,33 @@ import java.util.logging.Logger;
  */
 public class NonRegisteringDriver extends EventSupport implements Driver {
 
+    public final String version;
+    public final String name;
+
+    private String dbUrl;
+    private String dbUser;
+
     /** 目标驱动 */
     protected Driver targetDriver;
 
     public NonRegisteringDriver(Driver targetDriver){
         super();
         this.targetDriver = targetDriver;
+        this.name = PropertyUtils.getString(Constant.MONITER_DRIVER_NAME);
+        this.version = PropertyUtils.getString(Constant.MONITER_DRIVER_VERSION);
     }
 
     @Override
     public Connection connect(String url, Properties info) throws SQLException {
         long startTime = System.currentTimeMillis();
         try {
+            this.dbUrl = url;
+            this.dbUser = info.getProperty("user");
             Connection connection = targetDriver.connect(DriverUtils.getTargetDriverUrl(url), info);
-            publishEvent(ConnectionEvent.build(targetDriver, CONN_EVENT.CONN_OPEN, startTime,System.currentTimeMillis()));
+            publishEvent(ConnectionEvent.build(this, CONN_EVENT.CONN_OPEN, startTime,System.currentTimeMillis()));
             return ConnectionFactory.createConnection(connection);
         }catch (Exception e){
-            publishEvent(ConnectionEvent.build(targetDriver, CONN_EVENT.CONN_OPEN, startTime,System.currentTimeMillis(), EVENT_STATE.FAIL, e.getMessage()));
+            publishEvent(ConnectionEvent.build(this, CONN_EVENT.CONN_OPEN, startTime,System.currentTimeMillis(), EVENT_STATE.FAIL, e.getMessage()));
             throw e;
         }
     }
@@ -71,5 +82,25 @@ public class NonRegisteringDriver extends EventSupport implements Driver {
     @Override
     public Logger getParentLogger() throws SQLFeatureNotSupportedException {
         return targetDriver.getParentLogger();
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDbUrl() {
+        return dbUrl;
+    }
+
+    public String getDbUser() {
+        return dbUser;
+    }
+
+    public Driver getTargetDriver() {
+        return targetDriver;
     }
 }

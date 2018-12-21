@@ -7,11 +7,19 @@ package org.jdbc.monitor.common;
  */
 public final class Constant {
 
+    /** 驱动名称 */
+    public static final String MONITER_DRIVER_NAME = "moniter.driver.name";
+
+    /** 驱动版本 */
+    public static final String MONITER_DRIVER_VERSION = "moniter.driver.version";
+
     /** 代理驱动url前缀 **/
     public static final String URL_PREFIX = "proxy:";
 
     /** 被代理驱动 */
     public static final String PROXY_TARGET_DRIVER = "proxy.target.driver";
+
+
 
 
 

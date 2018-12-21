@@ -20,6 +20,7 @@ public enum STAT_CONN implements STAT{
         this.name = name;
     }
 
+    @Override
     public String getName() {
         return name;
     }

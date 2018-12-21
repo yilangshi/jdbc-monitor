@@ -3,6 +3,8 @@ package org.jdbc.monitor;
 import org.jdbc.monitor.common.ALERT_METHOD;
 import org.jdbc.monitor.excutor.SimpleMonitorEventMulticaster;
 import org.jdbc.monitor.statistics.ConnectionStatistics;
+import org.jdbc.monitor.statistics.ProfileStatistics;
+import org.jdbc.monitor.statistics.Statistics;
 import org.jdbc.monitor.util.PropertyUtils;
 import org.jdbc.monitor.warn.ConsoleWarn;
 import org.jdbc.monitor.warn.Warn;
@@ -15,16 +17,25 @@ public class Configuration {
     private static final Configuration instance = new Configuration();
 
     private SimpleMonitorEventMulticaster monitorEventMulticaster = SimpleMonitorEventMulticaster.getInstance();
+    private ProfileStatistics profileStatistics;
     private final ConnectionStatistics connectionStatistics;
     private final ConnectWarnListener connectWarnListener;
 
     private final List<Warn> warnList;
+    private final List<Statistics> statisticsList;
 
     private Configuration(){
         monitorEventMulticaster = SimpleMonitorEventMulticaster.getInstance();
-        connectionStatistics = new ConnectionStatistics();
         warnList = initAlert();
+        //创建监听对象
         connectWarnListener = new ConnectWarnListener(warnList);
+        //创建统计对象
+        statisticsList = new ArrayList<>();
+        profileStatistics = new ProfileStatistics();
+        statisticsList.add(profileStatistics);
+        connectionStatistics = new ConnectionStatistics();
+        statisticsList.add(connectionStatistics);
+
     }
 
     public List<Warn> initAlert(){
@@ -51,8 +62,9 @@ public class Configuration {
      * 添加连接监听
      */
     public void initListener(){
-        monitorEventMulticaster.addMonitorEventListener(connectionStatistics);
         monitorEventMulticaster.addMonitorEventListener(connectWarnListener);
+        monitorEventMulticaster.addMonitorEventListener(profileStatistics);
+        monitorEventMulticaster.addMonitorEventListener(connectionStatistics);
     }
 
 
@@ -60,8 +72,15 @@ public class Configuration {
         return instance;
     }
 
+    public List<Statistics> getStatisticsList() {
+        return statisticsList;
+    }
 
     public ConnectionStatistics getConnectionStatistics() {
         return connectionStatistics;
+    }
+
+    public ProfileStatistics getProfileStatistics() {
+        return profileStatistics;
     }
 }

@@ -6,12 +6,14 @@ import org.jdbc.monitor.event.MonitorEvent;
 import org.jdbc.monitor.event.type.CONN_EVENT;
 import org.jdbc.monitor.excutor.SimpleMonitorEventMulticaster;
 import org.jdbc.monitor.listener.AbstractMonitorEventListener;
+import org.jdbc.monitor.statistics.Statistics;
 import org.junit.Test;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.List;
 
 /**
  * Unit test for simple App.
@@ -35,6 +37,7 @@ public class AppTest
             Connection conn  = DriverManager.getConnection(JDBC_URL, userName, password);
             Statement statement = conn.createStatement();
             ResultSet resultSet = statement.executeQuery("select * from test ");
+            System.out.print("数据库数据:");
             while (resultSet.next()){
                 System.out.print(resultSet.getString(1) + ", ");
                 System.out.println(resultSet.getString(2));
@@ -80,9 +83,11 @@ public class AppTest
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        String statisticsInfo = Configuration.getInstance().getConnectionStatistics().getStatisticsInfo();
-        System.out.println("================");
-        System.out.println(statisticsInfo);
+        List<Statistics> statisticsList = Configuration.getInstance().getStatisticsList();
+        for(Statistics statistics:statisticsList) {
+            System.out.println("================");
+            System.out.println(statistics.getStatisticsInfo());
+        }
         System.out.println("================");
     }
 

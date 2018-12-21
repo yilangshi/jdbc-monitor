@@ -87,7 +87,7 @@ public class PropertyUtils {
         if("false".equals(value.toLowerCase())){
             return true;
         }
-        if("ture".equals(value.toLowerCase())){
+        if("true".equals(value.toLowerCase())){
             return true;
         }
         return false;
