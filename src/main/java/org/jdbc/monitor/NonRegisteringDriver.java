@@ -4,7 +4,7 @@ import org.jdbc.monitor.common.Constant;
 import org.jdbc.monitor.event.ConnectionEvent;
 import org.jdbc.monitor.event.EVENT_STATE;
 import org.jdbc.monitor.event.EventSupport;
-import org.jdbc.monitor.event.type.CONN_EVENT;
+import org.jdbc.monitor.event.type.CONN_EVENT_TYPE;
 import org.jdbc.monitor.proxy.ConnectionFactory;
 import org.jdbc.monitor.util.DriverUtils;
 import org.jdbc.monitor.util.PropertyUtils;
@@ -42,10 +42,10 @@ public class NonRegisteringDriver extends EventSupport implements Driver {
             this.dbUrl = url;
             this.dbUser = info.getProperty("user");
             Connection connection = targetDriver.connect(DriverUtils.getTargetDriverUrl(url), info);
-            publishEvent(ConnectionEvent.build(this, CONN_EVENT.CONN_OPEN, startTime,System.currentTimeMillis()));
+            publishEvent(ConnectionEvent.build(this, CONN_EVENT_TYPE.CONN_OPEN, startTime,System.currentTimeMillis()));
             return ConnectionFactory.createConnection(connection);
         }catch (Exception e){
-            publishEvent(ConnectionEvent.build(this, CONN_EVENT.CONN_OPEN, startTime,System.currentTimeMillis(), EVENT_STATE.FAIL, e.getMessage()));
+            publishEvent(ConnectionEvent.build(this, CONN_EVENT_TYPE.CONN_OPEN, startTime,System.currentTimeMillis(), EVENT_STATE.FAIL, e.getMessage()));
             throw e;
         }
     }

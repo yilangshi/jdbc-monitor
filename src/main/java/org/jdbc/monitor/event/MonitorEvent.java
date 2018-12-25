@@ -9,9 +9,9 @@ import java.util.EventObject;
  * @author: shi rui
  * @create: 2018-12-13 19:27
  */
-public class MonitorEvent extends EventObject implements Serializable{
+public class MonitorEvent<E extends EventType> extends EventObject implements Serializable{
 
-    private final EventType eventType;
+    private final E eventType;
 
     /** System time when the event happened. */
     private final long generateTime;
@@ -32,7 +32,7 @@ public class MonitorEvent extends EventObject implements Serializable{
         this.errorMsg = null;
     }
 
-    public MonitorEvent(Object source,EventType eventType){
+    public MonitorEvent(Object source,E eventType){
         super(source);
         this.eventType = eventType;
         this.generateTime = System.currentTimeMillis();
@@ -41,7 +41,7 @@ public class MonitorEvent extends EventObject implements Serializable{
         this.errorMsg = null;
     }
 
-    public MonitorEvent(Object source,EventType eventType,long generateTime,long fireTime){
+    public MonitorEvent(Object source,E eventType,long generateTime,long fireTime){
         super(source);
         this.eventType = eventType;
         this.generateTime = generateTime;
@@ -50,7 +50,7 @@ public class MonitorEvent extends EventObject implements Serializable{
         this.errorMsg = null;
     }
 
-    public MonitorEvent(Object source,EventType eventType,long generateTime, long fireTime, EVENT_STATE state, String errorMsg){
+    public MonitorEvent(Object source,E eventType,long generateTime, long fireTime, EVENT_STATE state, String errorMsg){
         super(source);
         this.eventType = eventType;
         this.generateTime = generateTime;
@@ -59,7 +59,7 @@ public class MonitorEvent extends EventObject implements Serializable{
         this.errorMsg = errorMsg;
     }
 
-    public EventType getEventType() {
+    public E getEventType() {
         return eventType;
     }
 

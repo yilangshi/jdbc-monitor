@@ -3,7 +3,7 @@ package org.jdbc.monitor;
 import static org.junit.Assert.assertTrue;
 
 import org.jdbc.monitor.event.MonitorEvent;
-import org.jdbc.monitor.event.type.CONN_EVENT;
+import org.jdbc.monitor.event.type.CONN_EVENT_TYPE;
 import org.jdbc.monitor.excutor.SimpleMonitorEventMulticaster;
 import org.jdbc.monitor.listener.AbstractMonitorEventListener;
 import org.jdbc.monitor.statistics.Statistics;
@@ -53,14 +53,14 @@ public class AppTest
     @Test
     public void testEvent(){
         SimpleMonitorEventMulticaster.getInstance()
-                .addMonitorEventListener(new AbstractMonitorEventListener<MonitorEvent>(CONN_EVENT.CONN_OPEN){
+                .addMonitorEventListener(new AbstractMonitorEventListener<MonitorEvent>(CONN_EVENT_TYPE.CONN_OPEN){
             @Override
             public void onMonitorEvent(MonitorEvent event) {
                 System.out.println("fire event========== "+ event.toString());
             }
         });
         SimpleMonitorEventMulticaster.getInstance()
-                .addMonitorEventListener(new AbstractMonitorEventListener<MonitorEvent>(CONN_EVENT.CONN_CLOSE){
+                .addMonitorEventListener(new AbstractMonitorEventListener<MonitorEvent>(CONN_EVENT_TYPE.CONN_CLOSE){
                     @Override
                     public void onMonitorEvent(MonitorEvent event) {
                         System.out.println("fire event========== "+ event.toString());

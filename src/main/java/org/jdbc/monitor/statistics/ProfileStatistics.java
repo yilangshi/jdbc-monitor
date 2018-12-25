@@ -5,7 +5,7 @@ import org.jdbc.monitor.common.Constant;
 import org.jdbc.monitor.common.STAT_PROFILE;
 import org.jdbc.monitor.event.ConnectionEvent;
 import org.jdbc.monitor.event.EVENT_STATE;
-import org.jdbc.monitor.event.type.CONN_EVENT;
+import org.jdbc.monitor.event.type.CONN_EVENT_TYPE;
 import org.jdbc.monitor.listener.AbstractConnectionMonitorEventListener;
 import org.jdbc.monitor.util.DateUtils;
 import org.jdbc.monitor.util.PropertyUtils;
@@ -38,7 +38,7 @@ public class ProfileStatistics extends AbstractConnectionMonitorEventListener im
         if(profileDbUrl != null && profileDbUrl != ""){
             return;
         }
-        if(event.getEventType() != CONN_EVENT.CONN_OPEN && event.getState() == EVENT_STATE.SUCCESS){
+        if(event.getEventType() != CONN_EVENT_TYPE.CONN_OPEN && event.getState() == EVENT_STATE.SUCCESS){
             return;
         }
         MonitorDriver monitorDriver = (MonitorDriver)event.getSource();
