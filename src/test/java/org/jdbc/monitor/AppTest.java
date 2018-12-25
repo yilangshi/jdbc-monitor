@@ -1,7 +1,5 @@
 package org.jdbc.monitor;
 
-import static org.junit.Assert.assertTrue;
-
 import org.jdbc.monitor.event.MonitorEvent;
 import org.jdbc.monitor.event.type.CONN_EVENT_TYPE;
 import org.jdbc.monitor.excutor.SimpleMonitorEventMulticaster;
@@ -13,7 +11,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Unit test for simple App.
@@ -37,7 +37,9 @@ public class AppTest
             Connection conn  = DriverManager.getConnection(JDBC_URL, userName, password);
             Statement statement = conn.createStatement();
             ResultSet resultSet = statement.executeQuery("select * from test ");
-            System.out.print("数据库数据:");
+            resultSet.last();
+            System.out.println("数据库数据:"+resultSet.getRow());
+            resultSet.beforeFirst();
             while (resultSet.next()){
                 System.out.print(resultSet.getString(1) + ", ");
                 System.out.println(resultSet.getString(2));
@@ -92,10 +94,11 @@ public class AppTest
     }
 
     @Test
-    public void testAlert(){
+    public void testErrorAlert(){
+        //测试异常报警
         testConnecton("root","error");
         try {
-            Thread.sleep(10);
+            Thread.sleep(2000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -103,6 +106,76 @@ public class AppTest
         System.out.println("================");
         System.out.println(statisticsInfo);
         System.out.println("================");
+    }
+
+    @Test
+    public void testErrorResumeAlert(){
+        //测试异常报警
+        testConnecton("root","error");
+        //测试恢复报警
+        testConnecton();
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        String statisticsInfo = Configuration.getInstance().getConnectionStatistics().getStatisticsInfo();
+        System.out.println("================");
+        System.out.println(statisticsInfo);
+        System.out.println("================");
+    }
+
+    @Test
+    public void testBatch(){
+        try {
+            Class.forName("org.jdbc.monitor.MonitorDriver");
+            Connection conn  = DriverManager.getConnection(JDBC_URL, USER_NAME, PASSWORD);
+            Statement statement = conn.createStatement();
+            statement.addBatch("update test set name = 'bbbb' where id = 1");
+            statement.addBatch("update test set name = 'cccc' where id = 2");
+            int[] aa = statement.executeBatch();
+
+            System.out.println("result:"+Arrays.toString(aa));
+
+            statement.close();
+            conn.close();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testForbitWord(){
+        try {
+            Class.forName("org.jdbc.monitor.MonitorDriver");
+            Connection conn  = DriverManager.getConnection(JDBC_URL, USER_NAME, PASSWORD);
+            Statement statement = conn.createStatement();
+            int aa = statement.executeUpdate("delete from test where id=2");
+
+            System.out.println("result:"+aa);
+
+            statement.close();
+            conn.close();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testWarnWord(){
+        try {
+            Class.forName("org.jdbc.monitor.MonitorDriver");
+            Connection conn  = DriverManager.getConnection(JDBC_URL, USER_NAME, PASSWORD);
+            Statement statement = conn.createStatement();
+            int aa = statement.executeUpdate("update test set name='<script>alert()</script>' id=2");
+
+            System.out.println("result:"+aa);
+
+            statement.close();
+            conn.close();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     @Test

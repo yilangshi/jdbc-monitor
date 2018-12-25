@@ -1,4 +1,4 @@
-package org.jdbc.monitor.warn;
+package org.jdbc.monitor.listener;
 
 /**
  * 报警接口
@@ -11,4 +11,10 @@ public interface Warn {
      * @param msg
      */
     void alert(String msg);
+
+    /**
+     * 获取报警的描述头,建议格式：[appName][warnType]
+     * @return
+     */
+    String getWarnHeader();
 }

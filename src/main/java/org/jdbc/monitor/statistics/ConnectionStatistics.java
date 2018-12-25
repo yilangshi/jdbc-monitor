@@ -4,18 +4,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.jdbc.monitor.MonitorDriver;
 import org.jdbc.monitor.common.Constant;
 import org.jdbc.monitor.common.STAT_CONN;
-import org.jdbc.monitor.common.STAT_CONN_DISTRIBUTION;
+import org.jdbc.monitor.common.STAT_TIME_DISTRIBUTION;
 import org.jdbc.monitor.event.ConnectionEvent;
 import org.jdbc.monitor.event.EVENT_STATE;
-import org.jdbc.monitor.event.type.CONN_EVENT_TYPE;
-import org.jdbc.monitor.exceptoin.IllegalEventException;
 import org.jdbc.monitor.listener.AbstractConnectionMonitorEventListener;
+import org.jdbc.monitor.proxy.ConnectionProxy;
 import org.jdbc.monitor.util.DateUtils;
 import org.jdbc.monitor.util.LRUList;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
@@ -25,13 +27,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ConnectionStatistics extends AbstractConnectionMonitorEventListener implements Statistics<STAT_CONN>{
 
-    private final AtomicInteger connOpenSuccessCount = new AtomicInteger();
+    /** 打开成功数 */
+    private final AtomicLong connOpenSuccessCount = new AtomicLong(0);
 
-    private final AtomicInteger connOpenFailureCount = new AtomicInteger();
+    private final AtomicLong connOpenFailureCount = new AtomicLong(0);
 
-    private final AtomicInteger connCloseSuccessCount = new AtomicInteger();
+    private final AtomicLong connCloseSuccessCount = new AtomicLong(0);
 
-    private final AtomicInteger connCloseFailureCount = new AtomicInteger();
+    private final AtomicLong connCloseFailureCount = new AtomicLong(0);
 
     private final LRUList<String> connOpenFailInfo = new LRUList<>(Constant.LIST_MAX_SIZE);
 
@@ -46,30 +49,41 @@ public class ConnectionStatistics extends AbstractConnectionMonitorEventListener
     /** 生存时间分布，按5段时间范围统计:
      * 0-1ms次数,1-10ms次数,10-100ms次数,100-1000ms次数,
      * 1-10s次数,10-100s次数,100-1000s次数,大于1000s次数 */
-    private final Map<STAT_CONN_DISTRIBUTION,AtomicInteger> connKeepaliveTimeRange = new ConcurrentHashMap<>();
+    private final Map<STAT_TIME_DISTRIBUTION,AtomicLong> connKeepaliveTimeRange =  Collections.synchronizedMap(new TreeMap<>());
 
     /** 最大并发数 */
     private volatile int concurrenceCount;
 
     /** statement打开次数 */
-    private final AtomicInteger statementCount = new AtomicInteger();
+    private final AtomicLong statementCount = new AtomicLong(0);
 
     /** prepared statement打开次数 */
-    private final AtomicInteger preparedStatementCount = new AtomicInteger();
+    private final AtomicLong preparedStatementCount = new AtomicLong(0);
 
     /** callable statement打开次数 */
-    private final AtomicInteger callableStatementCount = new AtomicInteger();
+    private final AtomicLong callableStatementCount = new AtomicLong(0);
 
     /** callable statement打开次数 */
-    private final AtomicInteger commitCount = new AtomicInteger();
+    private final AtomicLong commitCount = new AtomicLong(0);
 
     /** callable statement打开次数 */
-    private final AtomicInteger rollbackCount = new AtomicInteger();
+    private final AtomicLong rollbackCount = new AtomicLong(0);
 
     /** clob 打开次数 */
-    private final AtomicInteger clobCount = new AtomicInteger();
+    private final AtomicLong clobCount = new AtomicLong(0);
     /** blob 打开次数 */
-    private final AtomicInteger blobCount = new AtomicInteger();
+    private final AtomicLong blobCount = new AtomicLong(0);
+
+    public ConnectionStatistics(){
+        connKeepaliveTimeRange.put(STAT_TIME_DISTRIBUTION.TIME_1MS,new AtomicLong(0));
+        connKeepaliveTimeRange.put(STAT_TIME_DISTRIBUTION.TIME_10MS,new AtomicLong(0));
+        connKeepaliveTimeRange.put(STAT_TIME_DISTRIBUTION.TIME_100MS,new AtomicLong(0));
+        connKeepaliveTimeRange.put(STAT_TIME_DISTRIBUTION.TIME_1000MS,new AtomicLong(0));
+        connKeepaliveTimeRange.put(STAT_TIME_DISTRIBUTION.TIME_10S,new AtomicLong(0));
+        connKeepaliveTimeRange.put(STAT_TIME_DISTRIBUTION.TIME_100S,new AtomicLong(0));
+        connKeepaliveTimeRange.put(STAT_TIME_DISTRIBUTION.TIME_1000S,new AtomicLong(0));
+        connKeepaliveTimeRange.put(STAT_TIME_DISTRIBUTION.TIME_1000S_BG,new AtomicLong(0));
+    }
 
     @Override
     public void onMonitorEvent(ConnectionEvent event) {
@@ -103,7 +117,7 @@ public class ConnectionStatistics extends AbstractConnectionMonitorEventListener
                 rollbackCount.incrementAndGet();
                 break;
             default:
-                //抛弃不认识的事件
+                //抛弃不处理的事件
         }
     }
 
@@ -127,7 +141,8 @@ public class ConnectionStatistics extends AbstractConnectionMonitorEventListener
         if(event.getState() == EVENT_STATE.SUCCESS){
             connCloseSuccessCount.incrementAndGet();
             //计算链接生存时间
-            addTimeRange(event.getFireTime()-event.getGenerateTime());
+            ConnectionProxy connectionProxy = (ConnectionProxy)event.getSource();
+            addTimeRange(event.getFireTime() - connectionProxy.getStartTime());
         }else{
             connCloseFailureCount.incrementAndGet();
             MonitorDriver driver = (MonitorDriver)event.getSource();
@@ -137,11 +152,11 @@ public class ConnectionStatistics extends AbstractConnectionMonitorEventListener
 
     private void addTimeRange(long time){
         synchronized (connKeepaliveTimeRange) {
-            STAT_CONN_DISTRIBUTION distribution = STAT_CONN_DISTRIBUTION.valueOf(time);
+            STAT_TIME_DISTRIBUTION distribution = STAT_TIME_DISTRIBUTION.valueOf(time);
             if(connKeepaliveTimeRange.get(distribution) != null){
                 connKeepaliveTimeRange.get(distribution).incrementAndGet();
             }else {
-                AtomicInteger range = new AtomicInteger();
+                AtomicLong range = new AtomicLong();
                 range.incrementAndGet();
                 connKeepaliveTimeRange.put(distribution, range);
             }
@@ -166,7 +181,7 @@ public class ConnectionStatistics extends AbstractConnectionMonitorEventListener
 
     @Override
     public Map<STAT_CONN,Object> getStatistics(){
-        Map map= new HashMap(16);
+        Map<STAT_CONN,Object> map=  new TreeMap<>();
         map.put(STAT_CONN.CONN_OPEN_SUCCESS_COUNT,connOpenSuccessCount.get());
         map.put(STAT_CONN.CONN_OPEN_FAILURE_COUNT,connOpenFailureCount.get());
         map.put(STAT_CONN.CONN_CLOSE_SUCCESS_COUNT,connCloseSuccessCount.get());
@@ -175,7 +190,7 @@ public class ConnectionStatistics extends AbstractConnectionMonitorEventListener
         map.put(STAT_CONN.CONN_CLOSE_FAILURE_INFO,connCloseFailInfo);
         map.put(STAT_CONN.CONN_OPEN_TIMEOUT,connOpenTimeout);
         map.put(STAT_CONN.CONN_KEEPALIVE_TIME,connWaitTimeout);
-        map.put(STAT_CONN.CONN_KEEPALIVE_TIME_RANGE,connKeepaliveTimeRange);
+        map.put(STAT_CONN.CONN_KEEPALIVE_TIME_RANGE,getKeepAliveTimeRange());
         map.put(STAT_CONN.CONN_CONCURRENCY_COUNT,concurrenceCount);
         map.put(STAT_CONN.CONN_STATEMENT_COUNT,statementCount);
         map.put(STAT_CONN.CONN_PREPARED_STATEMENT_COUNT,preparedStatementCount);
@@ -184,7 +199,21 @@ public class ConnectionStatistics extends AbstractConnectionMonitorEventListener
         map.put(STAT_CONN.CONN_BLOB_COUNT,blobCount);
         map.put(STAT_CONN.CONN_COMMIT_COUNT,commitCount);
         map.put(STAT_CONN.CONN_ROLLBACK_COUNT,rollbackCount);
-        return null;
+        return map;
+    }
+
+    private String getKeepAliveTimeRange(){
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(connKeepaliveTimeRange.get(STAT_TIME_DISTRIBUTION.TIME_1MS).get()).append(",");
+        stringBuilder.append(connKeepaliveTimeRange.get(STAT_TIME_DISTRIBUTION.TIME_10MS).get()).append(",");
+        stringBuilder.append(connKeepaliveTimeRange.get(STAT_TIME_DISTRIBUTION.TIME_100MS).get()).append(",");
+        stringBuilder.append(connKeepaliveTimeRange.get(STAT_TIME_DISTRIBUTION.TIME_1000MS).get()).append(",");
+        stringBuilder.append(connKeepaliveTimeRange.get(STAT_TIME_DISTRIBUTION.TIME_10S).get()).append(",");
+        stringBuilder.append(connKeepaliveTimeRange.get(STAT_TIME_DISTRIBUTION.TIME_1MS).get()).append(",");
+        stringBuilder.append(connKeepaliveTimeRange.get(STAT_TIME_DISTRIBUTION.TIME_100S).get()).append(",");
+        stringBuilder.append(connKeepaliveTimeRange.get(STAT_TIME_DISTRIBUTION.TIME_1000S).get()).append(",");
+        stringBuilder.append(connKeepaliveTimeRange.get(STAT_TIME_DISTRIBUTION.TIME_1000S_BG).get());
+        return stringBuilder.toString();
     }
 
     @Override
@@ -198,7 +227,7 @@ public class ConnectionStatistics extends AbstractConnectionMonitorEventListener
         stringBuilder.append(STAT_CONN.CONN_CLOSE_FAILURE_INFO.getName()).append(":").append(connCloseFailInfo.stream().collect(Collectors.toList())).append("\r\n");
         stringBuilder.append(STAT_CONN.CONN_OPEN_TIMEOUT.getName()).append(":").append(connOpenTimeout).append("\r\n");
         stringBuilder.append(STAT_CONN.CONN_KEEPALIVE_TIME.getName()).append(":").append(connWaitTimeout).append("\r\n");
-        stringBuilder.append(STAT_CONN.CONN_KEEPALIVE_TIME_RANGE.getName()).append(":").append(connKeepaliveTimeRange).append("\r\n");
+        stringBuilder.append(STAT_CONN.CONN_KEEPALIVE_TIME_RANGE.getName()).append(":").append(getRangeStr()).append("\r\n");
         stringBuilder.append(STAT_CONN.CONN_CONCURRENCY_COUNT.getName()).append(":").append(concurrenceCount).append("\r\n");
         stringBuilder.append(STAT_CONN.CONN_STATEMENT_COUNT.getName()).append(":").append(statementCount.get()).append("\r\n");
         stringBuilder.append(STAT_CONN.CONN_PREPARED_STATEMENT_COUNT.getName()).append(":").append(preparedStatementCount.get()).append("\r\n");
@@ -208,6 +237,10 @@ public class ConnectionStatistics extends AbstractConnectionMonitorEventListener
         stringBuilder.append(STAT_CONN.CONN_COMMIT_COUNT.getName()).append(":").append(commitCount.get()).append("\r\n");
         stringBuilder.append(STAT_CONN.CONN_ROLLBACK_COUNT.getName()).append(":").append(rollbackCount.get()).append("\r\n");
         return stringBuilder.toString();
+    }
+
+    private String getRangeStr(){
+        return connKeepaliveTimeRange.entrySet().stream().map(item->item.getKey().getName()+":"+item.getValue()).collect(Collectors.joining(","));
     }
 
     @Override

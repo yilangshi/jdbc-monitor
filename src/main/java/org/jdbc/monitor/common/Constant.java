@@ -28,7 +28,9 @@ public final class Constant {
     /** 数据库连接被断开信息:java.net.SocketException: Software caused connection abort: recv failed */
     public static final String CONN_CLOSED_EXCEPTION_MSG = "Software caused connection abort: recv failed";
 
+    /** 查询sql前缀 */
+    public static final String SQL_SELECT_PREFIX = "SELECT";
 
-
+    public static final String REGULAR_SPLIT_WORD = ", ";
 
 }

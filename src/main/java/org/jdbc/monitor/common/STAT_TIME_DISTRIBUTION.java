@@ -3,20 +3,20 @@ package org.jdbc.monitor.common;
 import org.jdbc.monitor.exceptoin.IllegalTimeException;
 
 /**
- * 链接时间分布范围
+ * 时间分布范围
  * @author: shi rui
  * @create: 2018-12-24 13:41
  */
-public enum STAT_CONN_DISTRIBUTION implements STAT {
+public enum STAT_TIME_DISTRIBUTION implements STAT {
     /** 链接时间分布范围 */
-    COUNT_1MS("0-1毫秒次数", 0, 1),
-    COUNT_10MS("1-10毫秒次数", 1, 10),
-    COUNT_100MS("10-100毫秒次数", 10, 100),
-    COUNT_1000MS("100-1000毫秒次数", 100, 1000),
-    COUNT_10S("1-10秒次数", 1000, 10000),
-    COUNT_100S("10-100秒次数", 10000, 100000),
-    COUNT_1000S("100-1000秒次数", 100000, 1000000),
-    COUNT_1000S_BG("大于1000秒次数", 1000000, 0),
+    TIME_1MS("0-1毫秒次数", 0, 1),
+    TIME_10MS("1-10毫秒次数", 1, 10),
+    TIME_100MS("10-100毫秒次数", 10, 100),
+    TIME_1000MS("100-1000毫秒次数", 100, 1000),
+    TIME_10S("1-10秒次数", 1000, 10000),
+    TIME_100S("10-100秒次数", 10000, 100000),
+    TIME_1000S("100-1000秒次数", 100000, 1000000),
+    TIME_1000S_BG("大于1000秒次数", 1000000, 0),
     ;
 
     private String name;
@@ -24,21 +24,21 @@ public enum STAT_CONN_DISTRIBUTION implements STAT {
     private long min;
     private long max;
 
-    STAT_CONN_DISTRIBUTION(String name,long min,long max){
+    STAT_TIME_DISTRIBUTION(String name, long min, long max){
         this.name = name;
         this.min = min;
         this.max = max;
     }
 
     /**
-     * 根据时间求枚举值,算尾不算头
+     * 根据时间求枚举值,算头不算尾
      * @param time
      * @return
      */
-    public static STAT_CONN_DISTRIBUTION valueOf(long time){
-        STAT_CONN_DISTRIBUTION[] values = STAT_CONN_DISTRIBUTION.values();
-        for(STAT_CONN_DISTRIBUTION distribution: values){
-            if(distribution.getMin() > time){
+    public static STAT_TIME_DISTRIBUTION valueOf(long time){
+        STAT_TIME_DISTRIBUTION[] values = STAT_TIME_DISTRIBUTION.values();
+        for(STAT_TIME_DISTRIBUTION distribution: values){
+            if(distribution.getMin() <= time){
                 if(time < distribution.getMax()) {
                     return distribution;
                 }

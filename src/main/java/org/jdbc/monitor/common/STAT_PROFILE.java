@@ -6,6 +6,8 @@ package org.jdbc.monitor.common;
  * @create: 2018-12-20 11:27
  */
 public enum STAT_PROFILE implements STAT {
+    /** 统计信息 */
+    PROFILE_APP_NAME("应用名称"),
     PROFILE_DRIVER_NAME("驱动"),
     PROFILE_DRIVER_VERSION("驱动版本"),
     PROFILE_JAVA_VERSION("JAVA版本"),

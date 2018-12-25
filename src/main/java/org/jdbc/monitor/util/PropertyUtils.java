@@ -17,6 +17,13 @@ public class PropertyUtils {
     static {
         try {
             properties = new Properties();
+            //先加载jar包中属性文件
+            InputStream jarPropertyIS = Thread.currentThread().getContextClassLoader().getResourceAsStream("jdbc_monitor.properties");
+            if(jarPropertyIS != null) {
+                properties.load(jarPropertyIS);
+                jarPropertyIS.close();
+            }
+            //再加载class path下的属性文件
             Enumeration<URL> resources = PropertyUtils.class.getClassLoader().getResources(".");
             while (resources.hasMoreElements()){
                 URL url = resources.nextElement();
@@ -42,6 +49,11 @@ public class PropertyUtils {
 
     public static String getString(String key){
         return properties.getProperty(key);
+    }
+
+    public static String getString(String key,String defaultValue){
+        String value = properties.getProperty(key);
+        return StringUtils.isEmpty(value)?defaultValue:value;
     }
 
     public static Integer getInt(String key){

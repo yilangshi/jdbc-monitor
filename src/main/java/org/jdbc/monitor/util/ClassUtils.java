@@ -1,5 +1,7 @@
 package org.jdbc.monitor.util;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.beans.Introspector;
 import java.io.Closeable;
 import java.io.Externalizable;
@@ -18,7 +20,8 @@ import java.util.*;
  * @author Sam Brannen
  * @since 1.1
  */
-public abstract class ClassUtils {
+@Slf4j
+public class ClassUtils {
 
 	/** Suffix for array class names: {@code "[]"}. */
 	public static final String ARRAY_SUFFIX = "[]";
@@ -1272,6 +1275,16 @@ public abstract class ClassUtils {
 			return Modifier.isStatic(method.getModifiers()) ? method : null;
 		}
 		catch (NoSuchMethodException ex) {
+			return null;
+		}
+	}
+
+	public static Object getClassInstance(String classStr){
+		try {
+			Class clazz = Class.forName(classStr);
+			return clazz.newInstance();
+		} catch (Exception e) {
+			log.error("创建class["+classStr+"]实例异常:",e);
 			return null;
 		}
 	}

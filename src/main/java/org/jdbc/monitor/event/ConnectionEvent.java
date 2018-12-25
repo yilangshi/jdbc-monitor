@@ -9,13 +9,16 @@ import java.sql.Driver;
 import java.util.EventObject;
 
 /**
+ * 连接事件
+ * 当创建连接时，source为MoniterDriver
+ * 当连接自身事件时，source为ConnectionProxy
  * @author: shi rui
  * @create: 2018-12-14 17:57
  */
 public class ConnectionEvent extends MonitorEvent<CONN_EVENT_TYPE> implements Serializable {
 
-    public ConnectionEvent(Driver driver){
-        super(driver);
+    public ConnectionEvent(Object source){
+        super(source);
     }
 
     public ConnectionEvent(Object source,CONN_EVENT_TYPE eventType,long generateTime, long fireTime, EVENT_STATE state, String errorMsg){

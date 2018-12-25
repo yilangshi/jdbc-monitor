@@ -18,6 +18,9 @@
     <maven.compiler.target>1.7</maven.compiler.target>
     <org.slf4j.version>1.7.9</org.slf4j.version>
     <org.projectlombok>1.16.14</org.projectlombok>
+    <javax.servlet>3.1.0</javax.servlet>
+    <fastjson.version>1.2.55</fastjson.version>
+    <javax.mail>1.6.0</javax.mail>
   </properties>
 
   <dependencies>
@@ -31,6 +34,26 @@
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
       <version>${org.projectlombok}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>${javax.servlet}</version>
+      <scope>provided</scope>
+      <optional>true</optional>
+    </dependency>
+
+    <dependency>
+      <groupId>com.alibaba</groupId>
+      <artifactId>fastjson</artifactId>
+      <version>${fastjson.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>javax.mail</artifactId>
+      <version>${javax.mail}</version>
     </dependency>
 
     <dependency>
@@ -53,8 +76,16 @@
       <resource>
         <directory>src/main/resources/</directory>
         <filtering>true</filtering>
+        <excludes>
+          <exclude>support/http/assets/fonts/**</exclude>
+        </excludes>
+      </resource>
+      <!-- filter会破坏fonts的结构 -->
+      <resource>
+        <directory>src/main/resources/</directory>
+        <filtering>false</filtering>
         <includes>
-          <include>system.properties</include>
+          <include>support/http/assets/fonts/**</include>
         </includes>
       </resource>
     </resources>

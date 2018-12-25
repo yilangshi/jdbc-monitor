@@ -13,6 +13,7 @@ import org.jdbc.monitor.util.PropertyUtils;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -22,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class ProfileStatistics extends AbstractConnectionMonitorEventListener implements Statistics<STAT_PROFILE> {
 
+    private final String appName;
     private final String[] profileDriverInfo = new String[2];
     private final String[] profileDriverVersion = new String[2];
     private final String profileJavaVersion;
@@ -51,17 +53,19 @@ public class ProfileStatistics extends AbstractConnectionMonitorEventListener im
     }
 
     public ProfileStatistics(){
+        appName = PropertyUtils.getString("app.name");
         profileJavaVersion = System.getProperty("java.version");
         profileJvmName = System.getProperty("java.vm.name");
         profileClassPath = System.getProperty("java.class.path");
         profileStartTime = DateUtils.format(new Date(),"yyyy-MM-dd HH:mm:sss");
-        profileResetFlag = PropertyUtils.getBoolean("statistics_reset_flag");
-        profileResetTime = new AtomicInteger();
+        profileResetFlag = PropertyUtils.getBoolean("statistics.reset.flag");
+        profileResetTime = new AtomicInteger(0);
     }
 
     @Override
     public Map<STAT_PROFILE,Object> getStatistics() {
-        Map<STAT_PROFILE,Object> map = new HashMap<>(16);
+        Map<STAT_PROFILE,Object> map = new TreeMap<>();
+        map.put(STAT_PROFILE.PROFILE_APP_NAME,appName);
         map.put(STAT_PROFILE.PROFILE_DRIVER_NAME,profileDriverInfo);
         map.put(STAT_PROFILE.PROFILE_DRIVER_VERSION,profileDriverVersion);
         map.put(STAT_PROFILE.PROFILE_JAVA_VERSION,profileJavaVersion);
@@ -72,12 +76,13 @@ public class ProfileStatistics extends AbstractConnectionMonitorEventListener im
         map.put(STAT_PROFILE.PROFILE_START_TIME,profileStartTime);
         map.put(STAT_PROFILE.PROFILE_RESET_FLAG,profileResetFlag);
         map.put(STAT_PROFILE.PROFILE_RESET_TIME,profileResetTime);
-        return null;
+        return map;
     }
 
     @Override
     public String getStatisticsInfo() {
         StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(STAT_PROFILE.PROFILE_APP_NAME.getName()).append(":").append(appName).append("\r\n");
         stringBuilder.append(STAT_PROFILE.PROFILE_DRIVER_NAME.getName()).append(":").append(getDriverInfoStr()).append("\r\n");
         stringBuilder.append(STAT_PROFILE.PROFILE_JAVA_VERSION.getName()).append(":").append(profileJavaVersion).append("\r\n");
         stringBuilder.append(STAT_PROFILE.PROFILE_JVM_NAME.getName()).append(":").append(profileJvmName).append("\r\n");
@@ -102,4 +107,7 @@ public class ProfileStatistics extends AbstractConnectionMonitorEventListener im
         this.profileResetTime.set(0);
     }
 
+    public String getAppName() {
+        return appName;
+    }
 }
