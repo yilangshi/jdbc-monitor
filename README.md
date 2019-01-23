@@ -3,5 +3,3 @@
 
 我会持续完善完档，请及时查看文档：   
 https://github.com/yilangshi/jdbc-monitor/wiki
-
-共勉：开发之前一定要有明确的思路和具体的设计--先思而后行！
